@@ -228,76 +228,10 @@ class EarSCHEncoder2(nn.Module):
         return self.fc(h.squeeze())
 
 
-class EarSCHSquareEncoder(nn.Module):
-    def __init__(self, args):
-        super(EarSCHSquareEncoder, self).__init__()
-        self.sch_channel = args.ear_sch_ch
-        self.sch_dim = args.ear_sch_dim
-        self.norm = args.norm
-        if self.norm == "batch":
-            self.norm_method = nn.BatchNorm1d
-        elif self.norm == "layer":
-            self.norm_method = nn.GroupNorm
-        elif self.norm == "instance":
-            self.norm_method = nn.InstanceNorm1d
-        else:
-            raise ValueError("normalization method not recognized")
-        self.conv1 = self.make_gen_block(3, 8, stride=2, padding=1)
-        self.conv2 = self.make_gen_block(8, 16, stride=2)
-        self.conv3 = self.make_gen_block(16, 32, stride=1, padding=0)
-        self.conv4 = self.make_gen_block(32, 32, kernel_size=3, stride=1)
-        self.conv5 = self.make_gen_block(32, 64, kernel_size=3, stride=1, padding=0)
-        self.conv6 = self.make_gen_block(64, 64, kernel_size=3, stride=2, final_layer=True)
-        self.fc = nn.Sequential(
-            nn.Linear(64, args.ear_sch_emb_dim),
-        )
-
-    def make_gen_block(self, input_channels, output_channels, kernel_size=3, stride=1, padding=1, final_layer=False):
-        if not final_layer:
-            if self.norm == "layer":
-                return nn.Sequential(
-                    nn.Conv2d(input_channels, output_channels, kernel_size, stride, padding),
-                    self.norm_method(1, output_channels),
-                    nn.ReLU()
-                )
-            else:
-                return nn.Sequential(
-                    nn.Conv2d(input_channels, output_channels, kernel_size, stride, padding),
-                    self.norm_method(output_channels),
-                    nn.ReLU()
-                )
-        else:
-            return nn.Sequential(
-                nn.Conv2d(input_channels, output_channels, kernel_size, stride, padding),
-            )
-
-    def forward(self, ear_sch):
-        assert ear_sch.shape[1] == self.sch_channel
-        # print(self.sch_dim)
-        # print(ear_sch.shape)
-        assert ear_sch.shape[2] == np.sqrt(self.sch_dim)
-        h = self.conv1(ear_sch)
-        # print(h.shape)
-        h = self.conv2(h)
-        # print(h.shape)
-        h = self.conv3(h)
-        # print(h.shape)
-        h = self.conv4(h)
-        # print(h.shape)
-        h = self.conv5(h)
-        # print(h.shape)
-        h = self.conv6(h)
-        # print(h.shape)
-        return self.fc(h.squeeze())
-
-
 class ConvNNEarSch2HrtfSht(nn.Module):
     def __init__(self, args):
         super(ConvNNEarSch2HrtfSht, self).__init__()
-        if args.use_schSquare:
-            self.ear_enc = EarSCHSquareEncoder(args)
-        else:
-            self.ear_enc = EarSCHEncoder(args)
+        self.ear_enc = EarSCHEncoder(args)
         self.head_enc = HeadMeasureEncoder(args.head_anthro_dim, args.head_emb_dim)
         self.lr_enc = nn.Embedding(2, args.lr_emb_dim)
         self.freq_enc = nn.Embedding(args.freq_bin, args.freq_emb_dim)

@@ -59,8 +59,6 @@ def initParams():
     parser.add_argument("--head_anthro_dim", type=int, help="head anthro dimension", default=13)
     parser.add_argument("--ear_sch_dim", type=int, help="ear SCH dimension", default=441)
     parser.add_argument("--ear_sch_ch", type=int, help="ear SCH channel", default=3)
-    parser.add_argument("--use_schSquare", type=str2bool, nargs='?', const=True, default=True,
-                        help="whether to use SCH square.")
     parser.add_argument("--freq_bin", type=int, help="number of frequency bin", default=100)
 
     # Training prepare
